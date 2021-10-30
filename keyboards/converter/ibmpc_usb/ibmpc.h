@@ -35,8 +35,7 @@ ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef IBMPC_H
-#define IBMPC_H
+#pragma once
 
 #include <stdbool.h>
 #include "wait.h"
@@ -201,4 +200,3 @@ static inline void inhibit_xt(void)
     clock_hi();
     data_lo();
 }
-#endif
