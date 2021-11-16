@@ -114,4 +114,3 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define LED_ON()    do { DDRD |= (1<<6); PORTD |=  (1<<6); } while (0)
 #define LED_OFF()   do { DDRD |= (1<<6); PORTD &= ~(1<<6); } while (0)
 
-#endif
