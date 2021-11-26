@@ -23,3 +23,5 @@ AUDIO_ENABLE = no           # Audio output
 CUSTOM_MATRIX = yes
 
 SRC += matrix.c ibmpc.c
+
+EEPROM_DRIVER = i2c

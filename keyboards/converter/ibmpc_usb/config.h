@@ -53,8 +53,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IBMPC_DATA_DDR    DDRD
 
 // primary interface
-#define IBMPC_CLOCK_BIT   1
-#define IBMPC_DATA_BIT    0
+#define IBMPC_CLOCK_BIT   3
+#define IBMPC_DATA_BIT    2
 
 #define IBMPC_INT_INIT()  do {  \
     EICRA |= ((1<<ISC11) |      \
