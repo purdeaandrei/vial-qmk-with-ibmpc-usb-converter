@@ -29,6 +29,10 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // #define LED_CAPS_LOCK_PIN PF5
 // #define LED_SCROLL_LOCK_PIN PF7
 
+#define EXTERNAL_EEPROM_BYTE_COUNT 32768
+#define EEPROM_SIZE 32768
+#define EXTERNAL_EEPROM_PAGE_SIZE 64
+
 /* matrix size */
 #define MATRIX_ROWS 8
 #define MATRIX_COLS 16
