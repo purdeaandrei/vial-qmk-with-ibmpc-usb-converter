@@ -29,10 +29,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // #define LED_CAPS_LOCK_PIN PF5
 // #define LED_SCROLL_LOCK_PIN PF7
 
-#define EXTERNAL_EEPROM_BYTE_COUNT 32768
-#define EEPROM_SIZE 32768
-#define EXTERNAL_EEPROM_PAGE_SIZE 64
-
 /* matrix size */
 #define MATRIX_ROWS 8
 #define MATRIX_COLS 16
@@ -57,8 +53,8 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IBMPC_DATA_DDR    DDRD
 
 // primary interface
-#define IBMPC_CLOCK_BIT   3
-#define IBMPC_DATA_BIT    2
+#define IBMPC_CLOCK_BIT   1
+#define IBMPC_DATA_BIT    0
 
 #define IBMPC_INT_INIT()  do {  \
     EICRA |= ((1<<ISC11) |      \
@@ -117,4 +113,3 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // for debug
 #define LED_ON()    do { DDRD |= (1<<6); PORTD |=  (1<<6); } while (0)
 #define LED_OFF()   do { DDRD |= (1<<6); PORTD &= ~(1<<6); } while (0)
-
