@@ -28,10 +28,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // #define LED_NUM_LOCK_PIN PF6
 // #define LED_CAPS_LOCK_PIN PF5
 // #define LED_SCROLL_LOCK_PIN PF7
-#define EXTERNAL_EEPROM_BYTE_COUNT 32768
-#define EEPROM_SIZE 32768
-#define EXTERNAL_EEPROM_PAGE_SIZE 64
-#define DYNAMIC_KEYMAP_EEPROM_MAX_ADDR 32256
 
 /* matrix size */
 #define MATRIX_ROWS 8
@@ -57,21 +53,21 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define IBMPC_DATA_DDR    DDRD
 
 // primary interface
-#define IBMPC_CLOCK_BIT   3
-#define IBMPC_DATA_BIT    2
+#define IBMPC_CLOCK_BIT   1
+#define IBMPC_DATA_BIT    0
 
 #define IBMPC_INT_INIT()  do {  \
-    EICRA |= ((1<<ISC31) |      \
-              (0<<ISC30));      \
+    EICRA |= ((1<<ISC11) |      \
+              (0<<ISC10));      \
 } while (0)
 #define IBMPC_INT_ON()  do {    \
-    EIFR  |= (1<<INTF3);        \
-    EIMSK |= (1<<INT3);         \
+    EIFR  |= (1<<INTF1);        \
+    EIMSK |= (1<<INT1);         \
 } while (0)
 #define IBMPC_INT_OFF() do {    \
-    EIMSK &= ~(1<<INT3);        \
+    EIMSK &= ~(1<<INT1);        \
 } while (0)
-#define IBMPC_INT_VECT    INT3_vect
+#define IBMPC_INT_VECT    INT1_vect
 
 // secondary interface
 #ifdef IBMPC_SECONDARY
@@ -117,3 +113,4 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 // for debug
 #define LED_ON()    do { DDRD |= (1<<6); PORTD |=  (1<<6); } while (0)
 #define LED_OFF()   do { DDRD |= (1<<6); PORTD &= ~(1<<6); } while (0)
+
