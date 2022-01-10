@@ -20,21 +20,14 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 #define VENDOR_ID       0xFEED
 #define PRODUCT_ID      0x6536
-#define DEVICE_VER      0x0100
+#define DEVICE_VER      0x0101
 #define MANUFACTURER    QMK
 #define PRODUCT         PS/2 Keyboard
 #define DESCRIPTION     convert IBM PC keyboard to USB
 
-// #define LED_NUM_LOCK_PIN PF6
-// #define LED_CAPS_LOCK_PIN PF5
-// #define LED_SCROLL_LOCK_PIN PF7
-
 /* matrix size */
 #define MATRIX_ROWS 8
 #define MATRIX_COLS 16
-
-/* legacy keymap support */
-#define USE_LEGACY_KEYMAP
 
 /* key combination for command */
 #define IS_COMMAND() ( \
@@ -109,8 +102,3 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
     IBMPC_RST_PORT &= ~(1<<IBMPC_RST_BIT1);  \
     IBMPC_RST_DDR  |=  (1<<IBMPC_RST_BIT1);  \
 } while (0)
-
-// for debug
-#define LED_ON()    do { DDRD |= (1<<6); PORTD |=  (1<<6); } while (0)
-#define LED_OFF()   do { DDRD |= (1<<6); PORTD &= ~(1<<6); } while (0)
-

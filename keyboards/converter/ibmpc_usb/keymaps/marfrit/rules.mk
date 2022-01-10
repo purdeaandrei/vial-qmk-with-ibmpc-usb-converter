@@ -1,6 +1,7 @@
 # IBMPC Options
 IBMPC_SECONDARY = no		# enable secondary interface
 IBMPC_MOUSE_ENABLE = no   	# enable mouse support
+
 LTO_ENABLE = yes
 AUTO_SHIFT_ENABLE = no
 LTO_ENABLE = yes

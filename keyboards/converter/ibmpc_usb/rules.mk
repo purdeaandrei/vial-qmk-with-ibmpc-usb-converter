@@ -24,4 +24,4 @@ CUSTOM_MATRIX = yes
 
 SRC += matrix.c ibmpc.c
 
-EEPROM_DRIVER = i2c
+# EEPROM_DRIVER = i2c
