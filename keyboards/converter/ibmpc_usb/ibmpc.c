@@ -40,14 +40,11 @@ POSSIBILITY OF SUCH DAMAGE.
  */
 
 #include <stdbool.h>
-#include <avr/interrupt.h>
-#include <util/atomic.h>
 #include "ibmpc.h"
 #include "debug.h"
 #include "timer.h"
 #include "wait.h"
 #include "ringbuf.h"
-
 
 #define WAIT(stat, us, err) do { \
     if (!wait_##stat(us)) { \
@@ -187,9 +184,13 @@ int16_t ibmpc_host_recv(void)
         idle();
     }
 
+#if defined(__AVR__)
     ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+#endif
         ret = ringbuf_get(&rb);
+#if defined(__AVR__)
     }
+#endif
     if (ret != -1) dprintf("r%02X ", ret&0xFF);
     return ret;
 }
@@ -214,20 +215,24 @@ void ibmpc_host_isr_clear(void)
     ringbuf_reset(&rb);
 }
 
-
 // NOTE: With this ISR data line should be read within 5us after clock falling edge.
 // Confirmed that ATmega32u4 can read data line in 2.5us from interrupt after
 // ISR prologue pushs r18, r19, r20, r21, r24, r25 r30 and r31 with GCC 5.4.0
-ISR(IBMPC_INT_VECT)
-{
+void ibmpc_interrupt_service_routine(void) {
+// ISR(IBMPC_INT_VECT)
+//{
     uint8_t dbit;
-    dbit = IBMPC_DATA_PIN&(1<<IBMPC_DATA_BIT);
+    dbit = data_in();
 
     // Timeout check
     uint8_t t;
     // use only the least byte of millisecond timer
-    asm("lds %0, %1" : "=r" (t) : "p" (&timer_count));
-    //t = (uint8_t)timer_count;    // compiler uses four registers instead of one
+ #if defined(__AVR__)
+   asm("lds %0, %1" : "=r" (t) : "p" (&timer_count));
+#else
+//    t = (uint8_t)timer_count;    // compiler uses four registers instead of one
+    t = (uint8_t)timer_read_fast();
+#endif
     if (isr_state == 0x8000) {
         timer_start = t;
     } else {
@@ -291,8 +296,8 @@ ISR(IBMPC_INT_VECT)
             {
                 uint8_t us = 100;
                 // wait for rising and falling edge of b7 of XT_IBM
-                while (!(IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)) && us) { wait_us(1); us--; }
-                while (  IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)  && us) { wait_us(1); us--; }
+                while (!(clock_in()) && us) { wait_us(1); us--; }
+                while (  clock_in()  && us) { wait_us(1); us--; }
 
                 if (us) {
                     // XT_IBM-error: read start(0) as 1
@@ -317,8 +322,8 @@ ISR(IBMPC_INT_VECT)
             {
                 uint8_t us = 100;
                 // wait for rising and falling edge of AT stop bit to discriminate between XT and AT
-                while (!(IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)) && us) { wait_us(1); us--; }
-                while (  IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)  && us) { wait_us(1); us--; }
+                while (!(clock_in()) && us) { wait_us(1); us--; }
+                while (  clock_in()  && us) { wait_us(1); us--; }
 
                 if (us) {
                     // found stop bit: AT-midway - process the stop bit in next ISR
@@ -371,8 +376,7 @@ DONE:
         // Disable ISR if buffer is full
         IBMPC_INT_OFF();
         // inhibit: clock_lo
-        IBMPC_CLOCK_PORT &= ~(1<<IBMPC_CLOCK_BIT);
-        IBMPC_CLOCK_DDR  |=  (1<<IBMPC_CLOCK_BIT);
+        clock_lo();
     }
     if (ringbuf_is_empty(&rb)) {
         // buffer overflow
@@ -384,6 +388,13 @@ ERROR:
 NEXT:
     return;
 }
+
+#if defined(__AVR__)
+ISR(IBMPC_INT_VECT) { ibmpc_interrupt_service_routine(); }
+#else
+void ibmpc_interrupt_service_routine(void);
+void palCallback(void *arg) { ibmpc_interrupt_service_routine(); }
+#endif
 
 /* send LED state to keyboard */
 void ibmpc_host_set_led(uint8_t led)

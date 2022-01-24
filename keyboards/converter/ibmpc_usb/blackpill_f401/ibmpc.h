@@ -40,6 +40,10 @@ POSSIBILITY OF SUCH DAMAGE.
 #include <stdbool.h>
 #include "wait.h"
 #include "print.h"
+#include "ch.h"
+#include "hal.h"
+#include "gpio.h"
+#include "chtime.h"
 
 /*
  * IBM PC keyboard protocol
@@ -103,34 +107,32 @@ int16_t ibmpc_host_recv_response(void);
 int16_t ibmpc_host_recv(void);
 void ibmpc_host_isr_clear(void);
 void ibmpc_host_set_led(uint8_t usb_led);
-
+void palCallback(void *arg);
 
 /*--------------------------------------------------------------------
  * static functions
  *------------------------------------------------------------------*/
-#if defined(__AVR__)
 /*
  * Clock
  */
 static inline void clock_lo(void)
 {
-    IBMPC_CLOCK_PORT &= ~(1<<IBMPC_CLOCK_BIT);
-    IBMPC_CLOCK_DDR  |=  (1<<IBMPC_CLOCK_BIT);
+    palSetLineMode(IBMPC_CLOCK_PIN, PAL_MODE_OUTPUT_OPENDRAIN);
+    palWriteLine(IBMPC_CLOCK_PIN, PAL_LOW);
 }
 
 static inline void clock_hi(void)
 {
     /* input with pull up */
-    IBMPC_CLOCK_DDR  &= ~(1<<IBMPC_CLOCK_BIT);
-    IBMPC_CLOCK_PORT |=  (1<<IBMPC_CLOCK_BIT);
+    palSetLineMode(IBMPC_CLOCK_PIN, PAL_MODE_OUTPUT_OPENDRAIN);
+    palWriteLine(IBMPC_CLOCK_PIN, PAL_HIGH);
 }
 
 static inline bool clock_in(void)
 {
-    IBMPC_CLOCK_DDR  &= ~(1<<IBMPC_CLOCK_BIT);
-    IBMPC_CLOCK_PORT |=  (1<<IBMPC_CLOCK_BIT);
+    palSetLineMode(IBMPC_CLOCK_PIN, PAL_MODE_INPUT);
     wait_us(1);
-    return IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT);
+    return palReadLine(IBMPC_CLOCK_PIN);
 }
 
 /*
@@ -138,26 +140,23 @@ static inline bool clock_in(void)
  */
 static inline void data_lo(void)
 {
-    IBMPC_DATA_PORT &= ~(1<<IBMPC_DATA_BIT);
-    IBMPC_DATA_DDR  |=  (1<<IBMPC_DATA_BIT);
+    palSetLineMode(IBMPC_DATA_PIN, PAL_MODE_OUTPUT_OPENDRAIN);
+    palWriteLine(IBMPC_DATA_PIN, PAL_LOW);
 }
 
 static inline void data_hi(void)
 {
     /* input with pull up */
-    IBMPC_DATA_DDR  &= ~(1<<IBMPC_DATA_BIT);
-    IBMPC_DATA_PORT |=  (1<<IBMPC_DATA_BIT);
+    palSetLineMode(IBMPC_DATA_PIN, PAL_MODE_OUTPUT_OPENDRAIN);
+    palWriteLine(IBMPC_DATA_PIN, PAL_HIGH);
 }
 
 static inline bool data_in(void)
 {
-    IBMPC_DATA_DDR  &= ~(1<<IBMPC_DATA_BIT);
-    IBMPC_DATA_PORT |=  (1<<IBMPC_DATA_BIT);
+    palSetLineMode(IBMPC_DATA_PIN, PAL_MODE_INPUT);
     wait_us(1);
-    return IBMPC_DATA_PIN&(1<<IBMPC_DATA_BIT);
+    return palReadLine(IBMPC_DATA_PIN);
 }
-#endif
-
 
 static inline uint16_t wait_clock_lo(uint16_t us)
 {
@@ -200,3 +199,31 @@ static inline void inhibit_xt(void)
     clock_hi();
     data_lo();
 }
+
+/* reset for XT Type-1 keyboard: low pulse for 500ms */
+#define IBMPC_RST_HIZ() do { \
+    writePinLow(IBMPC_RST_PIN0); \
+    setPinInput(IBMPC_RST_PIN0); \
+    writePinLow(IBMPC_RST_PIN1); \
+    setPinInput(IBMPC_RST_PIN1); \
+} while (0)
+
+#define IBMPC_RST_LO() do { \
+    writePinLow(IBMPC_RST_PIN0); \
+    setPinOutput(IBMPC_RST_PIN0); \
+    writePinLow(IBMPC_RST_PIN1); \
+    setPinOutput(IBMPC_RST_PIN1); \
+} while (0)
+
+#define IBMPC_INT_INIT()                                 \
+        { palSetLineMode(IBMPC_CLOCK_PIN, PAL_MODE_INPUT); } \
+        while (0)
+#define IBMPC_INT_ON()                                                    \
+        {                                                                   \
+            palEnableLineEvent(IBMPC_CLOCK_PIN, PAL_EVENT_MODE_FALLING_EDGE); \
+            palSetLineCallback(IBMPC_CLOCK_PIN, palCallback, NULL);           \
+        }                                                                   \
+        while (0)
+#define IBMPC_INT_OFF()                       \
+        { palDisableLineEvent(IBMPC_CLOCK_PIN); } \
+        while (0)
