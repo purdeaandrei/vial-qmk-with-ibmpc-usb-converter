@@ -225,19 +225,24 @@ void ibmpc_interrupt_service_routine(void) {
     dbit = data_in();
 
     // Timeout check
-    uint8_t t;
     // use only the least byte of millisecond timer
- #if defined(__AVR__)
-   asm("lds %0, %1" : "=r" (t) : "p" (&timer_count));
+#if defined(__AVR__)
+    uint8_t t;
+    asm("lds %0, %1" : "=r" (t) : "p" (&timer_count));
 #else
 //    t = (uint8_t)timer_count;    // compiler uses four registers instead of one
+    uint16_t t;
     t = (uint8_t)timer_read_fast();
 #endif
     if (isr_state == 0x8000) {
         timer_start = t;
     } else {
         // This gives 2.0ms at least before timeout
+#if defined(__AVR__)
         if ((uint8_t)(t - timer_start) >= 3) {
+#else
+        if ((uint8_t)(timer_elapsed(timer_start)) >= 3) {
+#endif
             ibmpc_isr_debug = isr_state;
             ibmpc_error = IBMPC_ERR_TIMEOUT;
             goto ERROR;
@@ -296,8 +301,13 @@ void ibmpc_interrupt_service_routine(void) {
             {
                 uint8_t us = 100;
                 // wait for rising and falling edge of b7 of XT_IBM
+#if defined(__AVR__)
+                while (!(IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)) && us) { wait_us(1); us--; }
+                while (  IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)  && us) { wait_us(1); us--; }
+#else
                 while (!(clock_in()) && us) { wait_us(1); us--; }
                 while (  clock_in()  && us) { wait_us(1); us--; }
+#endif
 
                 if (us) {
                     // XT_IBM-error: read start(0) as 1
@@ -322,8 +332,13 @@ void ibmpc_interrupt_service_routine(void) {
             {
                 uint8_t us = 100;
                 // wait for rising and falling edge of AT stop bit to discriminate between XT and AT
+#if defined(__AVR__)
+                while (!(IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)) && us) { wait_us(1); us--; }
+                while (  IBMPC_CLOCK_PIN&(1<<IBMPC_CLOCK_BIT)  && us) { wait_us(1); us--; }
+#else
                 while (!(clock_in()) && us) { wait_us(1); us--; }
                 while (  clock_in()  && us) { wait_us(1); us--; }
+#endif
 
                 if (us) {
                     // found stop bit: AT-midway - process the stop bit in next ISR
@@ -376,7 +391,12 @@ DONE:
         // Disable ISR if buffer is full
         IBMPC_INT_OFF();
         // inhibit: clock_lo
+#if defined(__AVR__)
+        IBMPC_CLOCK_PORT &= ~(1<<IBMPC_CLOCK_BIT);
+        IBMPC_CLOCK_DDR  |=  (1<<IBMPC_CLOCK_BIT);
+#else
         clock_lo();
+#endif
     }
     if (ringbuf_is_empty(&rb)) {
         // buffer overflow
