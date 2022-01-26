@@ -12,13 +12,12 @@ To support other codesets, ibmpc_usb.h has to be extended.
 
 Original TMK Link/ Article: http://geekhack.org/index.php?topic=27272.0
 
-
 ## Connection
 
 Keyboard | ATMega32U4
 :------- | :---------
-Data     |  PD0
-Clock    |  PD1
+Data     |  PD0 / 3
+Clock    |  PD1 / 2
 
 And VCC and GND, of course. See Resource section for keyboard connector pin assign.
 
@@ -28,7 +27,7 @@ And VCC and GND, of course. See Resource section for keyboard connector pin assi
 ```
 git clone https://github.com/marfrit/qmk_firmware.git
 cd qmk_firmware
-make converter/ibmpc_usb:default
+make converter/ibmpc_usb/promicro:default
 ```
 
 ## Resource
