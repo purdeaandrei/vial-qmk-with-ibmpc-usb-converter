@@ -108,6 +108,7 @@ int16_t ibmpc_host_send(uint8_t data)
     if (!data_in()) dprintf("d:%u ", wait_data_hi(1000));
 
     IBMPC_INT_OFF();
+    cli();
 
 RETRY:
     /* terminate a transmission if we have */
@@ -152,6 +153,7 @@ RETRY:
     ibmpc_host_isr_clear();
 
     idle();
+    sei();
     IBMPC_INT_ON();
     return ibmpc_host_recv_response();
 ERROR:
@@ -166,6 +168,7 @@ ERROR:
     inhibit();
     wait_ms(2);
     idle();
+    sei();
     IBMPC_INT_ON();
     return -1;
 }
