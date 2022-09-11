@@ -434,22 +434,25 @@ matrix_row_t matrix_get_row(uint8_t row)
 }
 
 inline
-static void matrix_make(uint8_t code)
-{
-    uint8_t newcode=0;
+static uint8_t to_unimap(uint8_t code) {
+    uint8_t row = ROW(code);
+    uint8_t col = COL(code);
     switch (keyboard_kind) {
         case PC_XT:
-            newcode = map_cs1[ROW(code)][COL(code)];
-            break;
+            return pgm_read_byte(&unimap_cs1[row][col]);
         case PC_AT:
-            newcode = map_cs2[ROW(code)][COL(code)];
-            break;
+            return pgm_read_byte(&unimap_cs2[row][col]);
         case PC_TERMINAL:
-            newcode = map_cs3[ROW(code)][COL(code)];
-            break;
+            return pgm_read_byte(&unimap_cs3[row][col]);
         default:
-            break;
+            return UNIMAP_NO;
     }
+}
+
+inline
+static void matrix_make(uint8_t code)
+{
+    uint8_t newcode=to_unimap(code);
     if (!matrix_is_on(ROW(newcode), COL(newcode))) {
         matrix[ROW(newcode)] |= 1<<COL(newcode);
     }
@@ -458,21 +461,7 @@ static void matrix_make(uint8_t code)
 inline
 static void matrix_break(uint8_t code)
 {
-
-  uint8_t newcode=0;
-    switch (keyboard_kind) {
-        case PC_XT:
-            newcode = map_cs1[ROW(code)][COL(code)];
-            break;
-        case PC_AT:
-            newcode = map_cs2[ROW(code)][COL(code)];
-            break;
-        case PC_TERMINAL:
-            newcode = map_cs3[ROW(code)][COL(code)];
-            break;
-        default:
-            break;
-    }
+    uint8_t newcode=to_unimap(code);
     if (matrix_is_on(ROW(newcode), COL(newcode))) {
         matrix[ROW(newcode)] &= ~(1<<COL(newcode));
     }
