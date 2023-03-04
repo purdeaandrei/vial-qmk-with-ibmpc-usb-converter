@@ -1,5 +1,6 @@
 /*
-Copyright 2010,2011,2012,2013,2019 Jun WAKO <wakojun@gmail.com>
+Copyright 2010,2011,2012,2013,2019 Jun WAKO <wakojun@gmail.com>,
+2023 an_achronism <87213873+an-achronism@users.noreply.github.com>
 
 This software is licensed with a Modified BSD License.
 All of this is supposed to be Free Software, Open Source, DFSG-free,
@@ -419,10 +420,14 @@ void ibmpc_interrupt_service_routine(void);
 void palCallback(void *arg) { ibmpc_interrupt_service_routine(); }
 #endif
 
-/* send LED state to keyboard */
+/* Send enquiry byte to keyboard to check if it can handle LED state byte */
+bool ibmpc_host_led_enq(void)
+{
+    return (ibmpc_host_send(IBMPC_SET_LED) == IBMPC_ACK);
+}
+
+/* Send LED state byte to keyboard */
 void ibmpc_host_set_led(uint8_t led)
 {
-    if (0xFA == ibmpc_host_send(0xED)) {
-        ibmpc_host_send(led);
-    }
+    ibmpc_host_send(led);
 }
