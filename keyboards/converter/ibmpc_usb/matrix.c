@@ -25,7 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ibmpc_usb.h"
 #include "ibmpc.h"
 #include "matrix.h"
-#include "led_pins.h"
+#include "led.h"
 
 #define print_matrix_row(row)  print_bin_reverse8(matrix_get_row(row))
 #define print_matrix_header()  print("\nr/c 01234567\n")
@@ -518,48 +518,17 @@ bool matrix_has_ghost_in_row(uint8_t row)
 }
 #endif
 
-void write_led_pin(uint8_t usb_led, uint8_t pin)
-{
-    uint8_t relevant_bit;
-    switch (pin) {
-#ifdef CAPS_LOCK_PIN
-        case CAPS_LOCK_PIN:
-            relevant_bit = USB_LED_CAPS_LOCK;
-            break;
-#endif
-#ifdef NUM_LOCK_PIN
-        case NUM_LOCK_PIN:
-            relevant_bit = USB_LED_NUM_LOCK;
-            break;
-#endif
-#ifdef SCROLL_LOCK_PIN
-        case SCROLL_LOCK_PIN:
-            relevant_bit = USB_LED_SCROLL_LOCK;
-            break;
-#endif
-        default:
-            return;
-    }
-    if (usb_led & (1 << relevant_bit)) {
-        LOCK_INDICATOR_DDR |= (1 << pin);
-        LOCK_INDICATOR_PORT |= (1 << pin);
-    } else {
-        LOCK_INDICATOR_DDR &= ~(1 << pin);
-        LOCK_INDICATOR_PORT &= ~(1 << pin);
-    }
-}
-
 void led_set(uint8_t usb_led)
 {
     // Write lock states to indicators on the converter itself
-#ifdef NUM_LOCK_PIN
-    write_led_pin(usb_led, NUM_LOCK_PIN);
+#ifdef LED_NUM_LOCK_PIN
+    writePin(LED_NUM_LOCK_PIN, (usb_led >> USB_LED_NUM_LOCK) & 1);
 #endif
-#ifdef CAPS_LOCK_PIN
-    write_led_pin(usb_led, CAPS_LOCK_PIN);
+#ifdef LED_CAPS_LOCK_PIN
+    writePin(LED_CAPS_LOCK_PIN, (usb_led >> USB_LED_CAPS_LOCK) & 1);
 #endif
-#ifdef SCROLL_LOCK_PIN
-    write_led_pin(usb_led, SCROLL_LOCK_PIN);
+#ifdef LED_SCROLL_LOCK_PIN
+    writePin(LED_SCROLL_LOCK_PIN, (usb_led >> USB_LED_SCROLL_LOCK) & 1);
 #endif
     /* Pointing devices and original IBM PC ("XT") protocol keyboards do not
      * support receiving data signals, only sending them, so it's probably not a
