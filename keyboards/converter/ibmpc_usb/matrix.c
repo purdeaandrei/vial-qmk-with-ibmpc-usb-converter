@@ -554,11 +554,11 @@ void led_set(uint8_t usb_led)
         case PC_XT:
         case PC_MOUSE:
             break;
+        default:
         /* If keyboard returns "ACK" acknowledgement byte (0xFA) when LED update
          * enquiry byte (0xED) is sent, reorganise USB HID LED byte into IBM bit
          * order and send to keyboard to update all 3 of its lock state LEDs */
-        default:
-            if (ibmpc_host_led_enq()) {
+            if (ibmpc_host_send(IBMPC_SET_LED) == IBMPC_ACK) {
                 uint8_t ibm_led = 0;
                 if (usb_led & (1 << USB_LED_NUM_LOCK)) {
                     ibm_led |= (1 << IBMPC_LED_NUM_LOCK);
@@ -569,7 +569,7 @@ void led_set(uint8_t usb_led)
                 if (usb_led & (1 << USB_LED_SCROLL_LOCK)) {
                     ibm_led |= (1 << IBMPC_LED_SCROLL_LOCK);
                 }
-                ibmpc_host_set_led(ibm_led);
+                ibmpc_host_send(ibm_led);
             }
             break;
     }

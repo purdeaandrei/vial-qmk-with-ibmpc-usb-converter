@@ -419,15 +419,3 @@ ISR(IBMPC_INT_VECT) { ibmpc_interrupt_service_routine(); }
 void ibmpc_interrupt_service_routine(void);
 void palCallback(void *arg) { ibmpc_interrupt_service_routine(); }
 #endif
-
-/* Send enquiry byte to keyboard to check if it can handle LED state byte */
-bool ibmpc_host_led_enq(void)
-{
-    return (ibmpc_host_send(IBMPC_SET_LED) == IBMPC_ACK);
-}
-
-/* Send LED state byte to keyboard */
-void ibmpc_host_set_led(uint8_t led)
-{
-    ibmpc_host_send(led);
-}
