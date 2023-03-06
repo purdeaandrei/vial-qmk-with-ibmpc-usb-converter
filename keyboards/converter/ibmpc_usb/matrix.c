@@ -1,6 +1,7 @@
 /*
 Copyright 2011 Jun Wako <wakojun@gmail.com>,
-2021 Markus Fritsche <fritsche.markus@gmail.com>
+2021 Markus Fritsche <fritsche.markus@gmail.com>,
+2023 an_achronism <87213873+an-achronism@users.noreply.github.com>
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -24,6 +25,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #include "ibmpc_usb.h"
 #include "ibmpc.h"
 #include "matrix.h"
+#include "led.h"
 
 #define print_matrix_row(row)  print_bin_reverse8(matrix_get_row(row))
 #define print_matrix_header()  print("\nr/c 01234567\n")
@@ -364,15 +366,12 @@ uint8_t matrix_scan(void)
         case SETUP:
             xprintf("S%u ", timer_read());
             switch (keyboard_kind) {
-                case PC_XT:
-                    break;
+                case PC_XT: // "XT" protocol boards now protected by led_set()
                 case PC_AT:
                     led_set(host_keyboard_leds());
                     break;
                 case PC_TERMINAL:
-                    // Set all keys to make/break type
-                    ibmpc_host_send(0xF8);
-                    // This should not be harmful
+                    ibmpc_host_send(0xF8); // Set all keys to make/break type
                     led_set(host_keyboard_leds());
                     break;
                 default:
@@ -521,51 +520,60 @@ bool matrix_has_ghost_in_row(uint8_t row)
 
 void led_set(uint8_t usb_led)
 {
-    uint8_t ibmpc_led = 0;
-//    if (usb_led &  (1<<USB_LED_SCROLL_LOCK)) {
-//        DDRF |= (1<<7);
-//        PORTF |= (1<<7);
-//    } else {
-//        DDRF &= ~(1<<7);
-//        PORTF &= ~(1<<7);
-//    }
-//    if (usb_led &  (1<<USB_LED_NUM_LOCK)) {
-//        DDRF |= (1<<6);
-//        PORTF |= (1<<6);
-//    } else {
-//        DDRF &= ~(1<<6);
-//        PORTF &= ~(1<<6);
-//    }
-//    if (usb_led &  (1<<USB_LED_CAPS_LOCK)) {
-//        DDRF |= (1<<5);
-//        PORTF |= (1<<5);
-//    } else {
-//        DDRF &= ~(1<<5);
-//        PORTF &= ~(1<<5);
-//    }
-    // Sending before keyboard recognition may be harmful for XT keyboard
-    if (keyboard_kind == NONE) return;
-
-    // XT keyobard doesn't support any command and it is harmful perhaps
-    // https://github.com/tmk/tmk_keyboard/issues/635#issuecomment-626993437
-    if (keyboard_kind == PC_XT) return;
-
-    // It should be safe to send the command to keyboards with AT protocol
-    // - IBM Terminal doesn't support the command and response with 0xFE but it is not harmful.
-    // - Some other Terminals like G80-2551 supports the command.
-    //   https://geekhack.org/index.php?topic=103648.msg2894921#msg2894921
-
+    // Write lock states to indicators on the converter itself
+#ifdef LED_NUM_LOCK_PIN
+    writePin(LED_NUM_LOCK_PIN, (usb_led >> USB_LED_NUM_LOCK) & 1);
+#endif
+#ifdef LED_CAPS_LOCK_PIN
+    writePin(LED_CAPS_LOCK_PIN, (usb_led >> USB_LED_CAPS_LOCK) & 1);
+#endif
+#ifdef LED_SCROLL_LOCK_PIN
+    writePin(LED_SCROLL_LOCK_PIN, (usb_led >> USB_LED_SCROLL_LOCK) & 1);
+#endif
+    /* Pointing devices and original IBM PC ("XT") protocol keyboards do not
+     * support receiving data signals, only sending them, so it's probably not a
+     * good idea to send any to them:
+     * https://github.com/tmk/tmk_keyboard/issues/635#issuecomment-626993437
+     * 
+     * IBM terminal boards don't have LEDs, but are capable of receiving and
+     * responding to incoming data. This is useful, because it means we can send
+     * the enquiry byte to terminal keyboards, which will facilitate updating
+     * the lock state LEDs on terminal keyboards that do have them, like the
+     * Cherry G80-2551:
+     * https://geekhack.org/index.php?topic=103648.msg2894921#msg2894921
+     *
+     * The USB HID and IBM PC/AT protocols both set keyboards' lock state LEDs
+     * by sending a single byte in which each lock state is represented by one
+     * bit, but the bit order differs between protocols (see led.h and ibmpc.h).
+     */
+    // Send lock states out to connected input device(s), if appropriate
+    switch (keyboard_kind) {
+        /* If the connected device is unidentified (temporarily or otherwise), a
+         * pointing device, or an "XT" protocol keyboard, do nothing */
+        case NONE:
+        case PC_XT:
+        case PC_MOUSE:
+            break;
+        default:
+        /* If keyboard returns "ACK" acknowledgement byte (0xFA) when LED update
+         * enquiry byte (0xED) is sent, reorganise USB HID LED byte into IBM bit
+         * order and send to keyboard to update all 3 of its lock state LEDs */
+            if (ibmpc_host_send(IBMPC_SET_LED) == IBMPC_ACK) {
+                uint8_t ibm_led = 0;
+                if (usb_led & (1 << USB_LED_NUM_LOCK)) {
+                    ibm_led |= (1 << IBMPC_LED_NUM_LOCK);
+                }
+                if (usb_led & (1 << USB_LED_CAPS_LOCK)) {
+                    ibm_led |= (1 << IBMPC_LED_CAPS_LOCK);
+                }
+                if (usb_led & (1 << USB_LED_SCROLL_LOCK)) {
+                    ibm_led |= (1 << IBMPC_LED_SCROLL_LOCK);
+                }
+                ibmpc_host_send(ibm_led);
+            }
+            break;
+    }
     // TODO: PC_TERMINAL_IBM_RT support
-    if (usb_led &  (1<<USB_LED_SCROLL_LOCK)) {
-        ibmpc_led |= (1<<IBMPC_LED_SCROLL_LOCK);
-    }
-    if (usb_led &  (1<<USB_LED_NUM_LOCK)) {
-        ibmpc_led |= (1<<IBMPC_LED_NUM_LOCK);
-    }
-    if (usb_led &  (1<<USB_LED_CAPS_LOCK)) {
-        ibmpc_led |= (1<<IBMPC_LED_CAPS_LOCK);
-    }
-    ibmpc_host_set_led(ibmpc_led);
 }
 
 
