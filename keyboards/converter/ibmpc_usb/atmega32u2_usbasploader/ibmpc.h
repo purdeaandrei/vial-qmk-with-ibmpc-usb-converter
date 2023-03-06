@@ -108,8 +108,6 @@ int16_t ibmpc_host_send(uint8_t data);
 int16_t ibmpc_host_recv_response(void);
 int16_t ibmpc_host_recv(void);
 void ibmpc_host_isr_clear(void);
-bool ibmpc_host_led_enq(void);
-void ibmpc_host_set_led(uint8_t usb_led);
 
 
 /*--------------------------------------------------------------------
