@@ -801,14 +801,23 @@ static int8_t process_cs1(uint8_t code)
 static uint8_t cs2_e0code(uint8_t code) {
     switch(code) {
         // E0 prefixed codes translation See [a].
-        case 0x11: return 0x0F; // right alt
-        case 0x14: return 0x17; // right control
-        case 0x1F: return 0x19; // left GUI
+        case 0x11:  if (0xAB90 == keyboard_id || 0xAB91 == keyboard_id)
+                        return 0x13; // Hiragana(5576) -> KANA
+                    else
+                        return 0x0F; // right alt
+
+        case 0x41:  if (0xAB90 == keyboard_id || 0xAB91 == keyboard_id)
+                        return 0x7C; // Keypad ,(5576) -> Keypad *
+                    else
+                        return (code & 0x7F);
+
+        case 0x14: return 0x19; // right control
+        case 0x1F: return 0x17; // left GUI
         case 0x27: return 0x1F; // right GUI
-        case 0x2F: return 0x5C; // apps
+        case 0x2F: return 0x27; // apps
         case 0x4A: return 0x60; // keypad /
         case 0x5A: return 0x62; // keypad enter
-        case 0x69: return 0x27; // end
+        case 0x69: return 0x5C; // end
         case 0x6B: return 0x53; // cursor left
         case 0x6C: return 0x2F; // home
         case 0x70: return 0x39; // insert
@@ -816,6 +825,7 @@ static uint8_t cs2_e0code(uint8_t code) {
         case 0x72: return 0x3F; // cursor down
         case 0x74: return 0x47; // cursor right
         case 0x75: return 0x4F; // cursor up
+        case 0x77: return 0x00; // Unicomp New Model M Pause/Break key fix
         case 0x7A: return 0x56; // page down
         case 0x7D: return 0x5E; // page up
         case 0x7C: return 0x7F; // Print Screen

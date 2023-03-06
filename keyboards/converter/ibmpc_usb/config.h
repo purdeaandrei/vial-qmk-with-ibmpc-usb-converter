@@ -22,8 +22,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #define PRODUCT_ID      0x6536
 #define DEVICE_VER      0x0101
 #define MANUFACTURER    QMK
-#define PRODUCT         Legacy Keyboard Convert
-#define DESCRIPTION     convert IBM PC keyboard to USB
+#define PRODUCT         IBM keyboard protocol converter
 
 /* matrix size */
 #define MATRIX_ROWS 8
